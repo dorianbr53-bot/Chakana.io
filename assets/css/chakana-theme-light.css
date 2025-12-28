@@ -1,0 +1,20 @@
+
+/* chakana-theme-light.css — Variables del tema claro (inspirado en dorados sobre beige) */
+:root{
+  --bg:#f5f0e6;              /* fondo claro/beige */
+  --overlay:rgba(0,0,0,.35); /* overlay de modales más suave */
+
+  --panel:#ebe5d7;           /* panel principal (modales) */
+  --panel-soft:#e2dccf;      /* cards, HUD, banner power-ups */
+
+  --gold:#d4af37;            /* borde dorado / acentos */
+  --gold2:#a3841a;           /* dorado profundo para degradados */
+
+  --text:#2b221b;            /* texto principal oscuro */
+  --muted:#5a4f47;           /* texto secundario/suave */
+
+  /* Colores del tablero (valor de casilla: 1, 2, 4) */
+  --pastel-green:#b7e1a1;    /* casilla 1 punto */
+  --yellow:#f3da83;          /* casilla 2 puntos */
+  --dark-brown:#8b5a2b;      /* casilla 4 puntos */
+}

@@ -1,0 +1,20 @@
+
+/* chakana-theme-dark.css — Variables del tema oscuro andino */
+:root{
+  --bg:#0e0a07;            /* fondo oscuro andino */
+  --overlay:rgba(0,0,0,.72); /* overlay de modales */
+
+  --panel:#2b221b;         /* panel principal (modales) */
+  --panel-soft:#3a2e24;    /* cards, HUD, banner power-ups */
+
+  --gold:#f0c23b;          /* borde dorado / acentos */
+  --gold2:#a97710;         /* dorado profundo para degradados */
+
+  --text:#f6f1e6;          /* texto principal claro */
+  --muted:#cfc7b6;         /* texto secundario/suave */
+
+  /* Colores del tablero (valor de casilla: 1, 2, 4) */
+  --pastel-green:#b7e1a1;  /* casilla 1 punto */
+  --yellow:#f3da83;        /* casilla 2 puntos */
+  --dark-brown:#8b5a2b;    /* casilla 4 puntos */
+}

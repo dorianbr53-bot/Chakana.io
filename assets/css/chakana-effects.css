@@ -1,0 +1,7 @@
+/* v6-full: transiciones y mínimos efectos */
+.fade-in{animation:fadeIn .28s ease-out}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.selectable.selected{outline:2px solid var(--gold);box-shadow:0 0 18px 6px rgba(240,194,59,.45),0 8px 20px rgba(0,0,0,.35);transform:translateY(-2px);transition:box-shadow .25s ease,transform .2s ease}
+.btn{transition:filter .15s ease}
+.btn:hover{filter:brightness(1.04)}
+.modal-screen{display:none;align-items:center;justify-content:center;position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(2px);z-index:9999}

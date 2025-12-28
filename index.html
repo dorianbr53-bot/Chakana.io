@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conquista de la Chakana</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/chakana-core.css">
+  <link id="themeStylesheet" rel="stylesheet" href="assets/css/chakana-theme-dark.css">
+  <link rel="stylesheet" href="assets/css/chakana-effects.css">
+  <link rel="icon" href="assets/img/favicon.ico">
+  <style>
+    /* Base */
+    .screen{display:none;min-height:100vh;padding:18px}
+    .visible{display:block}
+    .center{display:flex;align-items:center;justify-content:center}
+    .modal{margin:auto}
+    .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:10px}
+    .pill{background:var(--panel);border:1px solid var(--gold);border-radius:999px;padding:6px 10px;display:inline-block}
+    .btn{padding:10px 14px;border-radius:6px;border:1px solid var(--panel-border);background:var(--button-bg);color:var(--text)}
+    .btn-primary{background:var(--gold);border-color:var(--gold);color:#1a1209;font-weight:700}
+    .btn-secondary{background:rgba(255,255,255,.06);color:var(--text)}
+    .input{width:100%;padding:10px;border:2px solid var(--panel-border);border-radius:6px;background:var(--panel);color:var(--text)}
+    /* Nick más claro */
+    #nickInput{background:#EEE0C4;color:#2b1e10;border-color:var(--gold)}
+
+    /* GRID duro: 3 columnas (Guerreros | Tablero | Turno) */
+    #gameLayout{display:grid !important;grid-template-columns:300px minmax(820px,1fr) 180px;column-gap:16px;align-items:start}
+    #sidePanel{grid-column:1;min-width:300px}
+    #boardWrap{grid-column:2}
+    #turnBanner{grid-column:3;min-width:180px;position:sticky;top:10px}
+
+    /* Tablero apilado: canvas base + overlay UI para línea fantasma */
+    .board-stack{position:relative;width:820px;height:820px}
+    #gameCanvas{position:absolute;left:0;top:0}
+    #uiCanvas{position:absolute;left:0;top:0;pointer-events:none}
+
+    /* Banner TURNO */
+    .turn-title{font-weight:700;text-align:center;margin-bottom:8px}
+    .timer-circle{width:120px;height:120px;border-radius:50%;border:4px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:26px;font-weight:800;color:var(--text)}
+    .turn-player{margin-top:8px;text-align:center;font-size:14px}
+
+    /* Avatares (lateral) */
+    .player-item{display:flex;align-items:flex-start;gap:10px;margin:10px 0}
+    .avatar{width:48px;height:48px;border-radius:50%;border:2px solid var(--panel-border)}
+    .player-body{flex:1}
+    .player-name{font-weight:700}
+    .player-stats{font-size:12px;opacity:.9;margin-top:2px}
+    .player-controls{display:flex;gap:6px;margin-top:6px}
+    .btn-mini{padding:6px 10px;font-size:12px;border-radius:6px}
+
+    /* Miniaturas de avatar */
+    .thumbs{display:flex;gap:8px;margin-top:6px}
+    .thumbs img{width:46px;height:46px;border-radius:6px;border:2px solid transparent;cursor:pointer}
+    .thumbs img.selected{border-color:var(--gold);box-shadow:0 0 10px 2px rgba(240,194,59,.45)}
+
+    /* Grids utilitarias */
+    .grid{display:grid;gap:10px}
+    .grid-4{grid-template-columns:repeat(4,minmax(140px,1fr))}
+    .scroll-y{max-height:54vh;overflow:auto;padding-right:6px}
+  </style>
+</head>
+<body>
+  <!-- HUD superior -->
+  <header id="hud" style="display:none">
+    <div class="wrap">
+      <div class="stats" id="hudPlayers"></div>
+      <div class="stats">
+        <span class="pill" id="hudCoins">💰 0</span>
+        <span class="pill" id="hudCups">🏆 0</span>
+        <span class="pill" id="hudPoints">🎯 0</span>
+      </div>
+      <div class="stats">
+        <button class="btn btn-secondary" id="btnStore">🛒 Tienda</button>
+        <button class="btn btn-secondary" id="btnSettings">⚙️ Ajustes</button>
+        <button class="btn btn-ghost" id="btnLogout">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- INTRO -->
+  <section id="intro-screen" class="screen center visible">
+    <div class="modal">
+      <h2>Intipixel Studios</h2>
+      <div class="content" style="text-align:center">
+        <video id="introVideo" width="720" height="360" playsinline preload="auto" autoplay muted poster="assets/img/fondo-textura.jpg">
+          <source src="assets/video/logo-intipixel.mp4" type="video/mp4">
+        </video>
+        <div style="margin-top:8px"><button class="btn btn-primary" id="skipIntro">SALTAR INTRO</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOGIN -->
+  <section id="login-screen" class="screen center">
+    <div class="modal">
+      <h2>CONQUISTA DE LA CHAKANA</h2>
+      <p class="subtitle">Estrategia Andina</p>
+      <div class="content">
+        <input class="input" id="nickInput" maxlength="12" placeholder="Tu Nick (máx. 12)" />
+        <div style="margin-top:8px"><button class="btn btn-primary" id="enterGame">ENTRAR AL JUEGO</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TUTORIAL -->
+  <section id="tutorial-screen" class="screen center">
+    <div class="modal">
+      <h2>Tutorial Rápido</h2>
+      <div class="content" style="text-align:center">
+        <video id="tutorialVideo" width="720" height="360" playsinline preload="auto" controls>
+          <source src="assets/video/tutorial-rapido.mp4" type="video/mp4">
+        </video>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:8px">
+          <button class="btn btn-primary" id="completeTutorial">Continuar</button>
+          <button class="btn btn-secondary" id="skipTutorial">Saltar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AVATAR (miniaturas) -->
+  <section id="avatar-screen" class="screen center">
+    <div class="modal">
+      <h2>Elige tu Guerrero</h2>
+      <div class="content">
+        <div class="grid grid-4" id="avatarGrid">
+          <div class="card selectable" data-avatar="condor"><img src="assets/img/guerrero-condor.png" alt="Cóndor"></div>
+          <div class="card selectable" data-avatar="puma"><img src="assets/img/guerrero-puma.png" alt="Puma"></div>
+          <div class="card selectable" data-avatar="boa"><img src="assets/img/guerrero-boa.png" alt="Boa"></div>
+          <div class="card selectable" data-avatar="vicuna"><img src="assets/img/guerrero-vicuna.png" alt="Vicuña"></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button class="btn btn-secondary" id="avatarBack">Atrás</button>
+          <button class="btn btn-primary" id="avatarContinue" disabled>Continuar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODO -->
+  <section id="mode-screen" class="screen center">
+    <div class="modal">
+      <h2>SELECCIONA EL MODO DE JUEGO</h2>
+      <div class="content">
+        <div class="grid grid-4" id="modeGrid">
+          <div class="card selectable mode" data-mode="1v1"><img src="assets/img/modos/1C1.png" alt="1C1"></div>
+          <div class="card selectable mode" data-mode="1via"><img src="assets/img/modos/1cIA.png" alt="1 vs IA"></div>
+          <div class="card selectable mode" data-mode="3"><img src="assets/img/modos/3g.png" alt="3 guerreros"></div>
+          <div class="card selectable mode" data-mode="4"><img src="assets/img/modos/4g.png" alt="4 guerreros"></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button class="btn btn-secondary" id="modeBack">Atrás</button>
+          <button class="btn btn-primary" id="modeContinue" disabled>Continuar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONFIGURAR JUGADORES (solo 1v1, 3, 4) -->
+  <section id="players-config-screen" class="screen center">
+    <div class="modal" style="width:min(900px,95vw)">
+      <h2>Configurar Jugadores</h2>
+      <div class="content">
+        <div id="playerSlots" class="scroll-y"></div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button class="btn btn-secondary" id="playersBack">Atrás</button>
+          <button class="btn btn-primary" id="playersContinue" disabled>Continuar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIEMPO -->
+  <section id="time-screen" class="screen center">
+    <div class="modal">
+      <h2>Tiempo por Turno</h2>
+      <div class="content">
+        <div class="grid grid-4" id="timeGrid">
+          <div class="card selectable time" data-time="st"><img src="assets/img/times/st.png" alt="Sin tiempo"></div>
+          <div class="card selectable time" data-time="5"><img src="assets/img/times/5s.png" alt="5s"></div>
+          <div class="card selectable time" data-time="10"><img src="assets/img/times/10s.png" alt="10s"></div>
+          <div class="card selectable time" data-time="15"><img src="assets/img/times/15s.png" alt="15s"></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button class="btn btn-secondary" id="timeBack">Atrás</button>
+          <button class="btn btn-primary" id="timeContinue" disabled>Continuar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FASES místicas (Quechua + traducción), scroll y brillo -->
+  <section id="phase-screen" class="screen center">
+    <div class="modal" style="width:min(900px,95vw)">
+      <h2>Selecciona Fase</h2>
+      <div class="content">
+        <div id="phaseInfo" class="subtitle">Copas actuales: <span id="currentCups">0</span></div>
+        <div id="phaseList" class="scroll-y"></div>
+        <div id="phasePlayers" class="card" style="margin-top:8px"></div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button class="btn btn-secondary" id="phaseBack">Atrás</button>
+          <button class="btn btn-primary" id="phaseContinue" disabled>Continuar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PREP -->
+  <section id="prep-screen" class="screen center">
+    <div class="modal"><h2>Preparando tablero...</h2><div class="content"><div class="subtitle">Fase <span id="prepPhase">—</span></div></div></div>
+  </section>
+
+  <!-- JUEGO: Guerreros | Tablero | Turno -->
+  <section id="game-screen" class="screen center">
+    <div class="modal" style="width:min(1280px,98vw)">
+      <h2>TABLERO CHAKANA</h2>
+      <div id="gameLayout">
+        <aside class="card" id="sidePanel">
+          <h3>GUERREROS</h3>
+          <div id="sidePlayers"></div>
+        </aside>
+        <div id="boardWrap">
+          <div class="board-stack">
+            <canvas id="gameCanvas" width="820" height="820"></canvas>
+            <canvas id="uiCanvas" width="820" height="820"></canvas>
+          </div>
+        </div>
+        <aside class="card" id="turnBanner">
+          <div class="turn-title">TURNO</div>
+          <div class="timer-circle" id="turnSeconds">—</div>
+          <div class="turn-player" id="turnPlayer">—</div>
+        </aside>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+        <button class="btn btn-secondary" id="btnEndGame">Finalizar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESUMEN -->
+  <section id="resumen-game-screen" class="screen center">
+    <div class="modal"><h2>Resumen de la partida</h2><div class="content"><div id="summaryScores" class="card" style="width:min(720px,92vw)"></div><button class="btn btn-primary" id="summaryContinue">Continuar</button></div></div>
+  </section>
+
+  <!-- RECOMPENSAS -->
+  <section id="player-game-score" class="screen center">
+    <div class="modal"><h2>Recompensas</h2><div class="content"><div id="avatarSummary" class="card" style="width:min(720px,92vw)"></div><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-primary" id="finishVictory">Finalizar (Victoria)</button><button class="btn btn-secondary" id="finishDefeat">Finalizar (Derrota)</button></div></div></div>
+  </section>
+
+  <!-- FIN -->
+  <section id="end-screen" class="screen center">
+    <div class="modal"><h2 id="endTitle">¡Victoria!</h2><div class="content"><video id="resultVideo" width="900" height="500" playsinline controls></video><button class="btn btn-primary" id="endContinue">Jugar otra fase</button></div></div>
+  </section>
+
+  <!-- Ajustes -->
+  <div id="settingsModal" class="modal-screen" aria-hidden="true" style="display:none">
+    <div class="modal" style="width:min(760px,95vw)"><h3>Ajustes</h3><div class="content"><div class="card"><div style="display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap"><div><strong>Tema:</strong> <button class="btn btn-secondary" data-theme="dark">Oscuro Andino</button> <button class="btn btn-secondary" data-theme="light">Claro Dorado</button></div><div style="display:flex;gap:20px;align-items:center"><div class="switch"><input type="checkbox" id="swAmbient" checked><label for="swAmbient">Música de fondo</label></div><div class="switch"><input type="checkbox" id="swClick" checked><label for="swClick">Efectos (click/cierre/cuenta)</label></div><div class="switch"><input type="checkbox" id="swTheme" checked><label for="swTheme">Swish al cambiar tema</label></div></div></div></div><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-primary" id="settingsClose">Cerrar</button></div></div>
+  </div>
+
+  <!-- Tienda -->
+  <div id="storeModal" class="modal-screen" aria-hidden="true" style="display:none">
+    <div class="modal" style="width:min(900px,95vw)"><h3>Tienda</h3><div class="content">
+      <div class="grid" style="grid-template-columns:repeat(3,minmax(160px,1fr));gap:12px">
+        <div class="card store-card"><img alt="Bomba" src="assets/img/store/bombas.png"><div class="price">💣 Bomba — 100💰</div></div>
+        <div class="card store-card"><img alt="Rayo" src="assets/img/store/rayos.png"><div class="price">⚡ Rayo — 120💰</div></div>
+        <div class="card store-card"><img alt="Skin" src="assets/img/store/skin-condor.png"><div class="price">✨ Skin Dorada — 500💰</div></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h4>Simular compra con tarjeta</h4>
+        <div class="grid" style="grid-template-columns:1fr 1fr 120px 120px auto;gap:10px">
+          <input class="input" id="cardName" placeholder="Nombre en la tarjeta" maxlength="26">
+          <input class="input" id="cardNumber" placeholder="Número de tarjeta (simulado)" maxlength="19">
+          <input class="input" id="cardExp" placeholder="MM/AA" maxlength="5">
+          <input class="input" id="cardCvv" placeholder="CVV" maxlength="4">
+          <button class="btn btn-primary" id="btnSimPay">Simular compra</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="btn btn-primary" id="storeClose">Cerrar</button></div>
+    </div></div>
+  </div>
+
+  <!-- Audio -->
+  <audio id="sfxClick" src="assets/sounds/click.mp3" preload="auto"></audio>
+  <audio id="sfxClose" src="assets/sounds/close-box.mp3" preload="auto"></audio>
+  <audio id="bgMusic" src="assets/sounds/bg.mp3" preload="auto" loop></audio>
+
+  <!-- Matrices desde imágenes -->
+  <script src="chakana-phase-from-images.js"></script>
+
+  <script>
+  const CONFIG={THEME_DEFAULT:'dark',TUTORIAL_COINS:300,TUTORIAL_CUPS:100,WIN_COINS:100,WIN_CUPS:100,LOSE_CUPS:-50,FOUL_LIMIT:2,START_BOMBS:1,START_RAYS:1};
+  const AVATARS=['condor','puma','boa','vicuna'];
+  const PLAYER_COLORS=['#e0c063','#63b1e0','#b063e0','#e0639d'];
+  const PHASE_META=[
+    {id:1,n:7,quechua:'Inti Raymi',sub:'Fiesta del Sol',diff:5},
+    {id:2,n:7,quechua:'Quilla',sub:'Luna Sagrada',diff:4},
+    {id:3,n:7,quechua:'Apu',sub:'Espíritu de la Montaña',diff:4},
+    {id:4,n:7,quechua:'Kawsay',sub:'La Fuerza de la Vida',diff:3},
+    {id:5,n:9,quechua:'Sumaq',sub:'Belleza Andina',diff:3},
+    {id:6,n:9,quechua:'Pachamama',sub:'Madre Tierra',diff:4},
+    {id:7,n:9,quechua:'Chakana',sub:'La Cruz Andina',diff:5},
+    {id:8,n:9,quechua:'Yachay',sub:'Sabiduría',diff:3},
+    {id:9,n:10,quechua:'Killa Qhapaq',sub:'Ruta de la Luna',diff:4},
+    {id:10,n:10,quechua:'Inti Ñan',sub:'Camino del Sol',diff:5},
+    {id:11,n:10,quechua:'Suyu',sub:'Los Cuatro Rincones',diff:4},
+    {id:12,n:10,quechua:'Amaru',sub:'Serpiente Sagrada',diff:5},
+  ];
+
+  const state={profile:null,players:[],mode:null,timePerTurn:null,phase:null,turnIndex:0,timer:null};
+
+  function showScreen(id){document.querySelectorAll('.screen').forEach(el=>{el.classList.remove('visible','fade-in');el.style.display='none';});const t=document.getElementById(id);t.style.display='block';void t.offsetWidth;t.classList.add('visible','fade-in');}
+  function glowSelect(cid,sel){const c=document.getElementById(cid);c.querySelectorAll(sel).forEach(el=>el.addEventListener('click',()=>{c.querySelectorAll(sel).forEach(e=>e.classList.remove('selected'));el.classList.add('selected');document.getElementById('sfxClick').play().catch(()=>{});}));}
+  function setTheme(theme){document.getElementById('themeStylesheet').href=theme==='light'?'assets/css/chakana-theme-light.css':'assets/css/chakana-theme-dark.css';}
+  function saveProfile(p){localStorage.setItem('chakana:'+p.nick,JSON.stringify(p));}
+  function loadProfile(n){const raw=localStorage.getItem('chakana:'+n);return raw?JSON.parse(raw):null;}
+
+  // Canvas base
+  function drawBoard(ctx,cells){const n=cells.length,W=ctx.canvas.width,H=ctx.canvas.height,margin=24,cs=Math.min(W-2*margin,H-2*margin)/n;ctx.clearRect(0,0,W,H);ctx.save();ctx.translate((W-cs*n)/2,(H-cs*n)/2);ctx.strokeStyle='#000';ctx.lineWidth=1;for(let i=0;i<=n;i++){ctx.beginPath();ctx.moveTo(0,i*cs);ctx.lineTo(n*cs,i*cs);ctx.stroke();ctx.beginPath();ctx.moveTo(i*cs,0);ctx.lineTo(i*cs,n*cs);ctx.stroke();}ctx.fillStyle='#000';const rDot=Math.max(2,cs*0.04);for(let i=0;i<=n;i++)for(let j=0;j<=n;j++){ctx.beginPath();ctx.arc(j*cs,i*cs,rDot,0,Math.PI*2);ctx.fill();}ctx.restore();}
+
+  // === Grid y juego de líneas (v6)
+  let N=0, CS=0, originX=0, originY=0; let HLines, VLines, CellOwner; const LINE_WIDTH=6;
+  function initGrid(n,canvas){N=n;CS=Math.min(canvas.width-48,canvas.height-48)/n;originX=(canvas.width-CS*n)/2;originY=(canvas.height-CS*n)/2;HLines=Array.from({length:n+1},()=>Array(n).fill(null));VLines=Array.from({length:n},()=>Array(n+1).fill(null));CellOwner=Array.from({length:n},()=>Array(n).fill(null));}
+  function edgeAtPoint(x,y){const tol=CS*0.25;const lx=x-originX,ly=y-originY;if(lx<0||ly<0||lx>N*CS||ly>N*CS)return null;const r=Math.round(ly/CS),c=Math.round(lx/CS);const dH=Math.abs(ly-r*CS),dV=Math.abs(lx-c*CS);if(dH<dV&&dH<=tol&&r>=0&&r<=N&&Math.floor(lx/CS)>=0&&Math.floor(lx/CS)<N){const cc=Math.floor(lx/CS);return{type:'H',r:r,c:cc,x1:originX+cc*CS,y1:originY+r*CS,x2:originX+(cc+1)*CS,y2:originY+r*CS};}if(dV<=tol&&c>=0&&c<=N&&Math.floor(ly/CS)>=0&&Math.floor(ly/CS)<N){const rr=Math.floor(ly/CS);return{type:'V',r:rr,c:c,x1:originX+c*CS,y1:originY+rr*CS,x2:originX+c*CS,y2:originY+(rr+1)*CS};}return null;}
+  function drawGhost(uiCtx,edge,color){uiCtx.clearRect(0,0,uiCtx.canvas.width,uiCtx.canvas.height);if(!edge)return;uiCtx.save();uiCtx.strokeStyle=color+'88';uiCtx.lineWidth=LINE_WIDTH;uiCtx.lineCap='round';uiCtx.beginPath();uiCtx.moveTo(edge.x1,edge.y1);uiCtx.lineTo(edge.x2,edge.y2);uiCtx.stroke();uiCtx.restore();}
+  function drawPlacedLine(ctx,edge,color){ctx.save();ctx.strokeStyle=color;ctx.lineWidth=LINE_WIDTH;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(edge.x1,edge.y1);ctx.lineTo(edge.x2,edge.y2);ctx.stroke();ctx.restore();}
+  function drawSun(ctx,r,c,color){const cx=originX+(c+0.5)*CS,cy=originY+(r+0.5)*CS;const R=CS*0.28,rays=12;ctx.save();ctx.translate(cx,cy);ctx.strokeStyle=color;ctx.lineWidth=4;for(let i=0;i<rays;i++){const ang=i*(Math.PI*2/rays);const r1=R*0.6,r2=R*1.15;ctx.beginPath();ctx.moveTo(Math.cos(ang)*r1,Math.sin(ang)*r1);ctx.lineTo(Math.cos(ang)*r2,Math.sin(ang)*r2);ctx.stroke();}ctx.fillStyle=color;ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);ctx.fill();ctx.restore();}
+  function checkAndCloseCells(ctx,edge,playerColor){const cells=[];if(edge.type==='H'){const r=edge.r,c=edge.c;if(r>0)cells.push({r:r-1,c:c});if(r<N)cells.push({r:r,c:c});}else{const r=edge.r,c=edge.c;if(c>0)cells.push({r:r,c:c-1});if(c<N)cells.push({r:r,c:c});}let closedAny=false;cells.forEach(cell=>{const r=cell.r,c=cell.c;const up=HLines[r][c],down=HLines[r+1][c],left=VLines[r][c],right=VLines[r][c+1];if(up&&down&&left&&right&&!CellOwner[r][c]){CellOwner[r][c]=playerColor;closedAny=true;drawSun(ctx,r,c,playerColor);state.players[state.turnIndex].points=(state.players[state.turnIndex].points||0)+1;}});return closedAny;}
+
+  function colorTimerCircle(){const el=document.getElementById('turnSeconds');el.style.borderColor=state.players[state.turnIndex].color;}
+  function renderSidePlayers(){const box=document.getElementById('sidePlayers');box.innerHTML='';state.players.forEach((p,idx)=>{const active=state.turnIndex===idx&&!p.abandoned;const glow=active?`outline:3px solid ${p.color}; box-shadow:0 0 12px 4px ${p.color}55;`:'outline:1px solid #0002';const div=document.createElement('div');div.className='player-item';div.innerHTML=`<img class="avatar" style="${glow}" src="assets/img/guerrero-${p.avatar}.png" alt="${p.avatar}"><div class="player-body"><div class="player-name">${p.nick}</div><div class="player-stats">💣 ${p.bombs} · ⚡ ${p.rays} · ${p.abandoned?'🚫 Abandonado':('❌ '+(p.fouls||0)+'/'+CONFIG.FOUL_LIMIT)}</div><div class="player-controls"><button class="btn btn-mini btn-primary" ${(!active||p.bombs<=0)?'disabled':''} data-act="bomb" data-idx="${idx}">Usar 💣</button><button class="btn btn-mini btn-primary" ${(!active||p.rays<=0)?'disabled':''} data-act="ray" data-idx="${idx}">Usar ⚡</button></div></div>`;box.appendChild(div);});}
+
+  function startTurnTimer(){clearInterval(state.timer);const tEl=document.getElementById('turnSeconds');let remain=(state.timePerTurn||0);tEl.textContent=state.timePerTurn?(remain+''):'—';document.getElementById('turnPlayer').textContent=state.players[state.turnIndex].nick;colorTimerCircle();renderSidePlayers();if(!state.timePerTurn)return;state.timer=setInterval(()=>{remain--;tEl.textContent=remain+'';if(remain<=0){clearInterval(state.timer);const cur=state.players[state.turnIndex];cur.fouls=(cur.fouls||0)+1;if(cur.fouls>=CONFIG.FOUL_LIMIT){cur.abandoned=true;}nextTurn();}},1000);} 
+  function nextTurn(){state.turnIndex=(state.turnIndex+1)%state.players.length;let safety=0;while(state.players[state.turnIndex].abandoned&&safety<10){state.turnIndex=(state.turnIndex+1)%state.players.length;safety++;}startTurnTimer();}
+
+  async function startGame(){showScreen('prep-screen');document.getElementById('prepPhase').textContent=state.phase;setTimeout(async()=>{showScreen('game-screen');document.getElementById('hud').style.display='block';renderSidePlayers();const canvas=document.getElementById('gameCanvas');const uiCanvas=document.getElementById('uiCanvas');const ctx=canvas.getContext('2d');const uiCtx=uiCanvas.getContext('2d');const map=ChakanaPhaseFromImages.PHASE_IMAGE_MAP[state.phase];try{const cells=await ChakanaPhaseFromImages.extractMatrixFromImage(map.src,map.n);drawBoard(ctx,cells);initGrid(map.n,canvas);}catch(err){alert('No se pudo leer el patrón desde la imagen. Si abriste con file://, usa un servidor local.');const n=7;const cells=Array.from({length:n},()=>Array(n).fill(0));drawBoard(ctx,cells);initGrid(n,canvas);}let ghost=null;canvas.addEventListener('mousemove',(ev)=>{const rect=canvas.getBoundingClientRect();const x=ev.clientX-rect.left,y=ev.clientY-rect.top;const edge=edgeAtPoint(x,y);const curCol=state.players[state.turnIndex].color;ghost=edge;drawGhost(uiCtx,ghost,curCol);});canvas.addEventListener('mouseleave',()=>{ghost=null;drawGhost(uiCtx,null,'');});canvas.addEventListener('click',()=>{if(!ghost)return;const cur=state.players[state.turnIndex],col=cur.color;if(ghost.type==='H'){if(HLines[ghost.r][ghost.c])return;HLines[ghost.r][ghost.c]=col;}else{if(VLines[ghost.r][ghost.c])return;VLines[ghost.r][ghost.c]=col;}drawPlacedLine(ctx,ghost,col);uiCtx.clearRect(0,0,uiCanvas.width,uiCanvas.height);const gained=checkAndCloseCells(ctx,ghost,col);if(!gained){nextTurn();}else{startTurnTimer();}});document.getElementById('turnPlayer').textContent=state.players[state.turnIndex].nick;startTurnTimer();},800);} 
+
+  function renderPhaseList(){const list=document.getElementById('phaseList');list.innerHTML='';const sorted=[...PHASE_META].sort((a,b)=>b.diff-a.diff||a.id-b.id);sorted.forEach(ph=>{const card=document.createElement('div');card.className='card phase-card selectable';card.dataset.phase=ph.id;card.innerHTML=`<div style="font-weight:700">${ph.quechua}</div><div style="font-size:12px;opacity:.85">${ph.sub}</div><div style="position:absolute;top:8px;right:10px;font-size:12px;opacity:.7">Dificultad: ${ph.diff}</div>`;card.addEventListener('click',()=>{list.querySelectorAll('.phase-card').forEach(el=>el.classList.remove('selected'));card.classList.add('selected');state.phase=ph.id;document.getElementById('phaseContinue').disabled=false;});list.appendChild(card);});document.getElementById('currentCups').textContent=state.profile.cups||0;renderPhasePlayers();}
+  function renderPhasePlayers(){const box=document.getElementById('phasePlayers');box.innerHTML='<strong>Jugadores:</strong>';const row=document.createElement('div');row.style.display='flex';row.style.gap='8px';state.players.forEach(p=>{const pill=document.createElement('div');pill.className='pill';pill.style.borderColor=p.color;pill.textContent=`${p.nick} · ${p.avatar}`;row.appendChild(pill);});box.appendChild(row);} 
+
+  // Flujo de escenas
+  function buildPlayersFromSlots(){state.players=[];const p1Color=PLAYER_COLORS[0];state.players.push({nick:state.profile.nick,avatar:state.profile.avatar,color:p1Color,points:0,bombs:CONFIG.START_BOMBS,rays:CONFIG.START_RAYS,fouls:0,abandoned:false});if(state.mode==='1via'){const aiAvatar=AVATARS.filter(a=>a!==state.profile.avatar)[Math.floor(Math.random()*AVATARS.length-1)]||'puma';const aiColor=PLAYER_COLORS[1];state.players.push({nick:'IA Andina',avatar:aiAvatar,color:aiColor,points:0,bombs:CONFIG.START_BOMBS,rays:CONFIG.START_RAYS,fouls:0,abandoned:false});return;}document.querySelectorAll('.player-slot').forEach((slot,i)=>{const name=(slot.querySelector('.slot-name').value||'').trim().slice(0,12)||('Jugador '+(i+2));const avatar=slot.querySelector('.slot-avatar').value;const color=slot.querySelector('.slot-color').value;state.players.push({nick:name,avatar,color,points:0,bombs:CONFIG.START_BOMBS,rays:CONFIG.START_RAYS,fouls:0,abandoned:false});});}
+  function renderPlayerSlots(){const wrap=document.getElementById('playerSlots');wrap.innerHTML='';let count=2;if(state.mode==='3')count=3;if(state.mode==='4')count=4;const start=(state.mode==='1v1')?1:1;for(let i=start;i<count;i++){const color=PLAYER_COLORS[i%PLAYER_COLORS.length];const slot=document.createElement('div');slot.className='card player-slot';slot.innerHTML=`<div><div style="display:flex;align-items:center;gap:10px"><div class="pill" style="border-color:${color}">Color</div><input class="input slot-name" maxlength="12" placeholder="Nombre jugador ${i+1} (máx. 12)"><input class="slot-color" type="hidden" value="${color}"></div><div class="thumbs"><img data-avatar="condor" src="assets/img/guerrero-condor.png" alt="condor"><img data-avatar="puma" src="assets/img/guerrero-puma.png" alt="puma"><img data-avatar="boa" src="assets/img/guerrero-boa.png" alt="boa"><img data-avatar="vicuna" src="assets/img/guerrero-vicuna.png" alt="vicuna"></div><input class="slot-avatar" type="hidden" value="condor"></div>`;wrap.appendChild(slot);}wrap.querySelectorAll('.player-slot .thumbs img').forEach(img=>{img.addEventListener('click',()=>{const box=img.closest('.player-slot');box.querySelectorAll('.thumbs img').forEach(i=>i.classList.remove('selected'));img.classList.add('selected');box.querySelector('.slot-avatar').value=img.dataset.avatar;});});}
+
+  // Música
+  function tryPlayBg(){const bg=document.getElementById('bgMusic');bg.volume=0.5;const p=bg.play();if(p&&p.catch)p.catch(()=>{});} 
+
+  window.addEventListener('DOMContentLoaded',()=>{
+    setTheme(CONFIG.THEME_DEFAULT);
+    const introVideo=document.getElementById('introVideo');introVideo.addEventListener('ended',()=>showScreen('login-screen'));document.getElementById('skipIntro').addEventListener('click',()=>{tryPlayBg();showScreen('login-screen');});
+
+    // Login
+    document.getElementById('enterGame').addEventListener('click',()=>{tryPlayBg();const nick=(document.getElementById('nickInput').value||'').trim().slice(0,12);if(!nick)return;let p=loadProfile(nick);if(!p){p={nick,avatar:null,coins:0,cups:0,progress:{}};saveProfile(p);}state.profile=p;if(!p.progress.tutorialDone){showScreen('tutorial-screen');}else{showScreen('avatar-screen');}});
+
+    // Tutorial bonus
+    document.getElementById('completeTutorial').addEventListener('click',()=>{state.profile.progress.tutorialDone=true;state.profile.coins=(state.profile.coins||0)+CONFIG.TUTORIAL_COINS;state.profile.cups=(state.profile.cups||0)+CONFIG.TUTORIAL_CUPS;saveProfile(state.profile);showScreen('avatar-screen');});
+    document.getElementById('skipTutorial').addEventListener('click',()=>{state.profile.progress.tutorialDone=true;saveProfile(state.profile);showScreen('avatar-screen');});
+
+    // Avatar principal
+    glowSelect('avatarGrid','.selectable');
+    document.querySelectorAll('#avatarGrid .selectable').forEach(card=>card.addEventListener('click',()=>{state.profile.avatar=card.dataset.avatar;saveProfile(state.profile);document.getElementById('avatarContinue').disabled=false;}));
+    document.getElementById('avatarContinue').addEventListener('click',()=>showScreen('mode-screen'));
+    document.getElementById('avatarBack').addEventListener('click',()=>showScreen('login-screen'));
+
+    // Modo
+    glowSelect('modeGrid','.mode');
+    document.querySelectorAll('#modeGrid .mode').forEach(card=>card.addEventListener('click',()=>{document.getElementById('modeContinue').disabled=false;state.mode=card.dataset.mode;}));
+    document.getElementById('modeBack').addEventListener('click',()=>showScreen('avatar-screen'));
+    document.getElementById('modeContinue').addEventListener('click',()=>{if(state.mode==='1via'){state.players=[{nick:state.profile.nick,avatar:state.profile.avatar,color:PLAYER_COLORS[0],points:0,bombs:CONFIG.START_BOMBS,rays:CONFIG.START_RAYS,fouls:0,abandoned:false},{nick:'IA Andina',avatar:AVATARS.filter(a=>a!==state.profile.avatar)[0]||'puma',color:PLAYER_COLORS[1],points:0,bombs:CONFIG.START_BOMBS,rays:CONFIG.START_RAYS,fouls:0,abandoned:false}];showScreen('time-screen');return;}renderPlayerSlots();showScreen('players-config-screen');});
+
+    // Config jugadores
+    document.getElementById('playersBack').addEventListener('click',()=>showScreen('mode-screen'));
+    document.getElementById('playerSlots').addEventListener('input',()=>{let ok=true;document.querySelectorAll('.player-slot .slot-name').forEach(inp=>{if(!inp.value.trim()) ok=false;});document.getElementById('playersContinue').disabled=!ok;});
+    document.getElementById('playersContinue').addEventListener('click',()=>{buildPlayersFromSlots();showScreen('time-screen');});
+
+    // Tiempo por turno
+    glowSelect('timeGrid','.time');
+    document.querySelectorAll('#timeGrid .time').forEach(card=>card.addEventListener('click',()=>{const t=card.dataset.time;state.timePerTurn=(t==='st')?null:parseInt(t,10);document.getElementById('timeContinue').disabled=false;}));
+    document.getElementById('timeBack').addEventListener('click',()=>{if(state.mode==='1via')showScreen('mode-screen');else showScreen('players-config-screen');});
+    document.getElementById('timeContinue').addEventListener('click',()=>{showScreen('phase-screen');renderPhaseList();});
+
+    // Fase → Juego
+    document.getElementById('phaseBack').addEventListener('click',()=>showScreen('time-screen'));
+    document.getElementById('phaseContinue').addEventListener('click',()=>startGame());
+
+    // Ajustes
+    const bg=document.getElementById('bgMusic');
+    document.getElementById('btnSettings').addEventListener('click',()=>{document.getElementById('settingsModal').style.display='flex';});
+    document.getElementById('settingsClose').addEventListener('click',()=>{document.getElementById('settingsModal').style.display='none';});
+    document.querySelectorAll('#settingsModal [data-theme]').forEach(btn=>btn.addEventListener('click',()=>setTheme(btn.dataset.theme)));
+    document.getElementById('swAmbient').addEventListener('change',e=>{if(e.target.checked){try{bg.play();}catch{}}else{bg.pause();bg.currentTime=0;}});
+    document.getElementById('swClick').addEventListener('change',e=>{document.getElementById('sfxClick').muted=!e.target.checked;document.getElementById('sfxClose').muted=!e.target.checked;});
+
+    // Tienda
+    document.getElementById('btnStore').addEventListener('click',()=>{document.getElementById('storeModal').style.display='flex';});
+    document.getElementById('storeClose').addEventListener('click',()=>{document.getElementById('storeModal').style.display='none';});
+    document.getElementById('btnSimPay').addEventListener('click',()=>{alert('Compra simulada: tarjeta aprobada (demo).');});
+
+    // Resumen → Recompensas → Fin
+    document.getElementById('btnEndGame').addEventListener('click',()=>{showScreen('resumen-game-screen');const box=document.getElementById('summaryScores');box.innerHTML='';state.players.forEach(p=>{const row=document.createElement('div');row.style.display='flex';row.style.gap='8px';const name=document.createElement('div');name.className='pill';name.style.borderColor=p.color;name.textContent=p.nick;const score=document.createElement('div');score.className='pill';score.textContent=p.points||0;row.appendChild(name);row.appendChild(score);box.appendChild(row);});});
+    document.getElementById('summaryContinue').addEventListener('click',()=>showScreen('player-game-score'));
+    document.getElementById('finishVictory').addEventListener('click',()=>{showScreen('end-screen');document.getElementById('endTitle').textContent='¡Victoria!';const vid=document.getElementById('resultVideo');vid.src='assets/video/'+(state.profile.avatar||'condor')+'-win.mp4';});
+    document.getElementById('finishDefeat').addEventListener('click',()=>{showScreen('end-screen');document.getElementById('endTitle').textContent='Derrota';const vid=document.getElementById('resultVideo');vid.src='assets/video/'+(state.profile.avatar||'condor')+'-los.mp4';});
+  });
+  </script>
+</body>
+</html>

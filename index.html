@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="assets/css/chakana-effects.css">
   <link rel="icon" href="assets/img/favicon.ico">
   <style>
-    /* Base */
+    /* Escenas base */
     .screen{display:none;min-height:100vh;padding:18px}
     .visible{display:block}
     .center{display:flex;align-items:center;justify-content:center}
@@ -23,17 +23,19 @@
     .btn{padding:10px 14px;border-radius:6px;border:1px solid var(--panel-border);background:var(--button-bg);color:var(--text)}
     .btn-primary{background:var(--gold);border-color:var(--gold);color:#1a1209;font-weight:700}
     .btn-secondary{background:rgba(255,255,255,.06);color:var(--text)}
-    .input{width:100%;padding:10px;border:2px solid var(--panel-border);border-radius:6px;background:var(--panel);color:var(--text)}
-    /* Nick más claro */
-    #nickInput{background:#EEE0C4;color:#2b1e10;border-color:var(--gold)}
+    .input{padding:10px;border:2px solid var(--panel-border);border-radius:8px;background:#EEE0C4;color:#2b1e10}
 
-    /* GRID duro: 3 columnas (Guerreros | Tablero | Turno) */
+    /* Nick compacto */
+    #login-screen .modal .content{display:flex;flex-direction:column;align-items:center;gap:10px}
+    #nickInput{width:220px;max-width:80vw;border-color:var(--gold)}
+
+    /* Layout juego: 3 columnas estrictas */
     #gameLayout{display:grid !important;grid-template-columns:300px minmax(820px,1fr) 180px;column-gap:16px;align-items:start}
     #sidePanel{grid-column:1;min-width:300px}
     #boardWrap{grid-column:2}
     #turnBanner{grid-column:3;min-width:180px;position:sticky;top:10px}
 
-    /* Tablero apilado: canvas base + overlay UI para línea fantasma */
+    /* Tablero apilado */
     .board-stack{position:relative;width:820px;height:820px}
     #gameCanvas{position:absolute;left:0;top:0}
     #uiCanvas{position:absolute;left:0;top:0;pointer-events:none}
@@ -43,7 +45,7 @@
     .timer-circle{width:120px;height:120px;border-radius:50%;border:4px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:26px;font-weight:800;color:var(--text)}
     .turn-player{margin-top:8px;text-align:center;font-size:14px}
 
-    /* Avatares (lateral) */
+    /* Avatares lateral */
     .player-item{display:flex;align-items:flex-start;gap:10px;margin:10px 0}
     .avatar{width:48px;height:48px;border-radius:50%;border:2px solid var(--panel-border)}
     .player-body{flex:1}
@@ -52,15 +54,19 @@
     .player-controls{display:flex;gap:6px;margin-top:6px}
     .btn-mini{padding:6px 10px;font-size:12px;border-radius:6px}
 
-    /* Miniaturas de avatar */
-    .thumbs{display:flex;gap:8px;margin-top:6px}
-    .thumbs img{width:46px;height:46px;border-radius:6px;border:2px solid transparent;cursor:pointer}
-    .thumbs img.selected{border-color:var(--gold);box-shadow:0 0 10px 2px rgba(240,194,59,.45)}
+    /* Tienda: precios debajo */
+    .store-card img{display:block;width:100%;height:auto;border-radius:6px}
+    .store-card .price{margin-top:6px;font-weight:700;text-align:center}
 
-    /* Grids utilitarias */
-    .grid{display:grid;gap:10px}
-    .grid-4{grid-template-columns:repeat(4,minmax(140px,1fr))}
-    .scroll-y{max-height:54vh;overflow:auto;padding-right:6px}
+    /* Lista de fases con banners horizontales */
+    .phase-card{position:relative;overflow:hidden;padding:0}
+    .phase-card img{display:block;width:100%;height:auto}
+    .phase-info{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,.45);color:#fff;padding:8px 10px;border-radius:8px}
+    .phase-card.selected{outline:2px solid var(--gold);box-shadow:0 0 18px 6px rgba(240,194,59,.45)}
+    .phase-grid{display:grid;grid-template-columns:minmax(320px,900px);justify-content:center;gap:12px}
+    #phasePreview{margin-top:10px;text-align:center}
+    #phasePreview img{max-width:900px;width:100%;height:auto;border-radius:8px;border:2px solid var(--gold)}
+
   </style>
 </head>
 <body>
@@ -106,23 +112,7 @@
     </div>
   </section>
 
-  <!-- TUTORIAL -->
-  <section id="tutorial-screen" class="screen center">
-    <div class="modal">
-      <h2>Tutorial Rápido</h2>
-      <div class="content" style="text-align:center">
-        <video id="tutorialVideo" width="720" height="360" playsinline preload="auto" controls>
-          <source src="assets/video/tutorial-rapido.mp4" type="video/mp4">
-        </video>
-        <div style="display:flex;gap:10px;justify-content:center;margin-top:8px">
-          <button class="btn btn-primary" id="completeTutorial">Continuar</button>
-          <button class="btn btn-secondary" id="skipTutorial">Saltar</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- AVATAR (miniaturas) -->
+  <!-- AVATAR -->
   <section id="avatar-screen" class="screen center">
     <div class="modal">
       <h2>Elige tu Guerrero</h2>
@@ -160,7 +150,7 @@
     </div>
   </section>
 
-  <!-- CONFIGURAR JUGADORES (solo 1v1, 3, 4) -->
+  <!-- CONFIG JUGADORES -->
   <section id="players-config-screen" class="screen center">
     <div class="modal" style="width:min(900px,95vw)">
       <h2>Configurar Jugadores</h2>
@@ -193,14 +183,14 @@
     </div>
   </section>
 
-  <!-- FASES místicas (Quechua + traducción), scroll y brillo -->
+  <!-- FASES (con banners) -->
   <section id="phase-screen" class="screen center">
-    <div class="modal" style="width:min(900px,95vw)">
+    <div class="modal" style="width:min(1000px,95vw)">
       <h2>Selecciona Fase</h2>
       <div class="content">
         <div id="phaseInfo" class="subtitle">Copas actuales: <span id="currentCups">0</span></div>
-        <div id="phaseList" class="scroll-y"></div>
-        <div id="phasePlayers" class="card" style="margin-top:8px"></div>
+        <div id="phaseList" class="phase-grid"></div>
+        <div id="phasePreview"></div>
         <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
           <button class="btn btn-secondary" id="phaseBack">Atrás</button>
           <button class="btn btn-primary" id="phaseContinue" disabled>Continuar</button>
@@ -211,10 +201,10 @@
 
   <!-- PREP -->
   <section id="prep-screen" class="screen center">
-    <div class="modal"><h2>Preparando tablero...</h2><div class="content"><div class="subtitle">Fase <span id="prepPhase">—</span></div></div></div>
+    <div class="modal"><h2>Preparando tablero...</h2><div class="content"><div id="prepBanner" style="text-align:center"></div><div class="subtitle">Fase <span id="prepPhase">—</span></div></div></div>
   </section>
 
-  <!-- JUEGO: Guerreros | Tablero | Turno -->
+  <!-- JUEGO -->
   <section id="game-screen" class="screen center">
     <div class="modal" style="width:min(1280px,98vw)">
       <h2>TABLERO CHAKANA</h2>
@@ -265,15 +255,15 @@
   <div id="storeModal" class="modal-screen" aria-hidden="true" style="display:none">
     <div class="modal" style="width:min(900px,95vw)"><h3>Tienda</h3><div class="content">
       <div class="grid" style="grid-template-columns:repeat(3,minmax(160px,1fr));gap:12px">
-        <div class="card store-card"><img alt="Bomba" src="assets/img/store/bombas.png"><div class="price">💣 Bomba — 100💰</div></div>
-        <div class="card store-card"><img alt="Rayo" src="assets/img/store/rayos.png"><div class="price">⚡ Rayo — 120💰</div></div>
-        <div class="card store-card"><img alt="Skin" src="assets/img/store/skin-condor.png"><div class="price">✨ Skin Dorada — 500💰</div></div>
+        <div class="card store-card" data-product="bomb"><img alt="Bomba" src="assets/img/store/bombas.png"><div class="price">💣 Bomba — 100💰</div><button class="btn btn-primary btn-buy">Comprar 💣</button></div>
+        <div class="card store-card" data-product="ray"><img alt="Rayo" src="assets/img/store/rayos.png"><div class="price">⚡ Rayo — 120💰</div><button class="btn btn-primary btn-buy">Comprar ⚡</button></div>
+        <div class="card store-card" data-product="skin"><img alt="Skin Dorada" src="assets/img/store/skin-condor.png"><div class="price">✨ Skin Dorada — 500💰</div><button class="btn btn-primary btn-buy">Comprar ✨</button></div>
       </div>
       <div class="card" style="margin-top:12px">
-        <h4>Simular compra con tarjeta</h4>
+        <h4>Compra con tarjeta</h4>
         <div class="grid" style="grid-template-columns:1fr 1fr 120px 120px auto;gap:10px">
           <input class="input" id="cardName" placeholder="Nombre en la tarjeta" maxlength="26">
-          <input class="input" id="cardNumber" placeholder="Número de tarjeta (simulado)" maxlength="19">
+          <input class="input" id="cardNumber" placeholder="Número de tarjeta" maxlength="19">
           <input class="input" id="cardExp" placeholder="MM/AA" maxlength="5">
           <input class="input" id="cardCvv" placeholder="CVV" maxlength="4">
           <button class="btn btn-primary" id="btnSimPay">Simular compra</button>
@@ -288,7 +278,7 @@
   <audio id="sfxClose" src="assets/sounds/close-box.mp3" preload="auto"></audio>
   <audio id="bgMusic" src="assets/sounds/bg.mp3" preload="auto" loop></audio>
 
-  <!-- Matrices desde imágenes -->
+  <!-- Patrones desde imágenes -->
   <script src="chakana-phase-from-images.js"></script>
 
   <script>
@@ -309,11 +299,13 @@
     {id:11,n:10,quechua:'Suyu',sub:'Los Cuatro Rincones',diff:4},
     {id:12,n:10,quechua:'Amaru',sub:'Serpiente Sagrada',diff:5},
   ];
+  // Banners (assets/img/phases/fase-01.png ... fase-12.png)
+  const PHASE_BANNERS = Object.fromEntries(Array.from({length:12},(_,i)=>[i+1, `assets/img/phases/fase-${String(i+1).padStart(2,'0')}.png`]));
 
-  const state={profile:null,players:[],mode:null,timePerTurn:null,phase:null,turnIndex:0,timer:null};
+  const state={profile:null,players:[],mode:null,timePerTurn:null,phase:null,turnIndex:0,timer:null,store:{selectedProduct:null,prices:{bomb:100,ray:120,skin:500}}};
 
   function showScreen(id){document.querySelectorAll('.screen').forEach(el=>{el.classList.remove('visible','fade-in');el.style.display='none';});const t=document.getElementById(id);t.style.display='block';void t.offsetWidth;t.classList.add('visible','fade-in');}
-  function glowSelect(cid,sel){const c=document.getElementById(cid);c.querySelectorAll(sel).forEach(el=>el.addEventListener('click',()=>{c.querySelectorAll(sel).forEach(e=>e.classList.remove('selected'));el.classList.add('selected');document.getElementById('sfxClick').play().catch(()=>{});}));}
+  function glowSelect(cid,sel){const c=document.getElementById(cid);if(!c) return; c.querySelectorAll(sel).forEach(el=>el.addEventListener('click',()=>{c.querySelectorAll(sel).forEach(e=>e.classList.remove('selected'));el.classList.add('selected');document.getElementById('sfxClick').play().catch(()=>{});}));}
   function setTheme(theme){document.getElementById('themeStylesheet').href=theme==='light'?'assets/css/chakana-theme-light.css':'assets/css/chakana-theme-dark.css';}
   function saveProfile(p){localStorage.setItem('chakana:'+p.nick,JSON.stringify(p));}
   function loadProfile(n){const raw=localStorage.getItem('chakana:'+n);return raw?JSON.parse(raw):null;}
@@ -321,7 +313,7 @@
   // Canvas base
   function drawBoard(ctx,cells){const n=cells.length,W=ctx.canvas.width,H=ctx.canvas.height,margin=24,cs=Math.min(W-2*margin,H-2*margin)/n;ctx.clearRect(0,0,W,H);ctx.save();ctx.translate((W-cs*n)/2,(H-cs*n)/2);ctx.strokeStyle='#000';ctx.lineWidth=1;for(let i=0;i<=n;i++){ctx.beginPath();ctx.moveTo(0,i*cs);ctx.lineTo(n*cs,i*cs);ctx.stroke();ctx.beginPath();ctx.moveTo(i*cs,0);ctx.lineTo(i*cs,n*cs);ctx.stroke();}ctx.fillStyle='#000';const rDot=Math.max(2,cs*0.04);for(let i=0;i<=n;i++)for(let j=0;j<=n;j++){ctx.beginPath();ctx.arc(j*cs,i*cs,rDot,0,Math.PI*2);ctx.fill();}ctx.restore();}
 
-  // === Grid y juego de líneas (v6)
+  // Grid/lines
   let N=0, CS=0, originX=0, originY=0; let HLines, VLines, CellOwner; const LINE_WIDTH=6;
   function initGrid(n,canvas){N=n;CS=Math.min(canvas.width-48,canvas.height-48)/n;originX=(canvas.width-CS*n)/2;originY=(canvas.height-CS*n)/2;HLines=Array.from({length:n+1},()=>Array(n).fill(null));VLines=Array.from({length:n},()=>Array(n+1).fill(null));CellOwner=Array.from({length:n},()=>Array(n).fill(null));}
   function edgeAtPoint(x,y){const tol=CS*0.25;const lx=x-originX,ly=y-originY;if(lx<0||ly<0||lx>N*CS||ly>N*CS)return null;const r=Math.round(ly/CS),c=Math.round(lx/CS);const dH=Math.abs(ly-r*CS),dV=Math.abs(lx-c*CS);if(dH<dV&&dH<=tol&&r>=0&&r<=N&&Math.floor(lx/CS)>=0&&Math.floor(lx/CS)<N){const cc=Math.floor(lx/CS);return{type:'H',r:r,c:cc,x1:originX+cc*CS,y1:originY+r*CS,x2:originX+(cc+1)*CS,y2:originY+r*CS};}if(dV<=tol&&c>=0&&c<=N&&Math.floor(ly/CS)>=0&&Math.floor(ly/CS)<N){const rr=Math.floor(ly/CS);return{type:'V',r:rr,c:c,x1:originX+c*CS,y1:originY+rr*CS,x2:originX+c*CS,y2:originY+(rr+1)*CS};}return null;}
@@ -333,33 +325,41 @@
   function colorTimerCircle(){const el=document.getElementById('turnSeconds');el.style.borderColor=state.players[state.turnIndex].color;}
   function renderSidePlayers(){const box=document.getElementById('sidePlayers');box.innerHTML='';state.players.forEach((p,idx)=>{const active=state.turnIndex===idx&&!p.abandoned;const glow=active?`outline:3px solid ${p.color}; box-shadow:0 0 12px 4px ${p.color}55;`:'outline:1px solid #0002';const div=document.createElement('div');div.className='player-item';div.innerHTML=`<img class="avatar" style="${glow}" src="assets/img/guerrero-${p.avatar}.png" alt="${p.avatar}"><div class="player-body"><div class="player-name">${p.nick}</div><div class="player-stats">💣 ${p.bombs} · ⚡ ${p.rays} · ${p.abandoned?'🚫 Abandonado':('❌ '+(p.fouls||0)+'/'+CONFIG.FOUL_LIMIT)}</div><div class="player-controls"><button class="btn btn-mini btn-primary" ${(!active||p.bombs<=0)?'disabled':''} data-act="bomb" data-idx="${idx}">Usar 💣</button><button class="btn btn-mini btn-primary" ${(!active||p.rays<=0)?'disabled':''} data-act="ray" data-idx="${idx}">Usar ⚡</button></div></div>`;box.appendChild(div);});}
 
-  function startTurnTimer(){clearInterval(state.timer);const tEl=document.getElementById('turnSeconds');let remain=(state.timePerTurn||0);tEl.textContent=state.timePerTurn?(remain+''):'—';document.getElementById('turnPlayer').textContent=state.players[state.turnIndex].nick;colorTimerCircle();renderSidePlayers();if(!state.timePerTurn)return;state.timer=setInterval(()=>{remain--;tEl.textContent=remain+'';if(remain<=0){clearInterval(state.timer);const cur=state.players[state.turnIndex];cur.fouls=(cur.fouls||0)+1;if(cur.fouls>=CONFIG.FOUL_LIMIT){cur.abandoned=true;}nextTurn();}},1000);} 
+  // IA
+  function listAvailableEdges(){const edges=[];for(let r=0;r<=N;r++)for(let c=0;c<N;c++)if(!HLines[r][c])edges.push({type:'H',r,c,x1:originX+c*CS,y1:originY+r*CS,x2:originX+(c+1)*CS,y2:originY+r*CS});for(let r=0;r<N;r++)for(let c=0;c<=N;c++)if(!VLines[r][c])edges.push({type:'V',r,c,x1:originX+c*CS,y1:originY+r*CS,x2:originX+c*CS,y2:originY+(r+1)*CS});return edges;}
+  function aiChooseEdge(){const edges=listAvailableEdges();for(const e of edges){const cells=[];if(e.type==='H'){const r=e.r,c=e.c;if(r>0)cells.push({r:r-1,c:c});if(r<N)cells.push({r:r,c:c});}else{const r=e.r,c=e.c;if(c>0)cells.push({r:r,c:c-1});if(c<N)cells.push({r:r,c:c});}for(const cell of cells){const r=cell.r,c=cell.c;const up = (e.type==='H'&&e.r===r&&e.c===c)?true:!!HLines[r][c];const down=(e.type==='H'&&e.r===r+1&&e.c===c)?true:!!HLines[r+1][c];const left=(e.type==='V'&&e.r===r&&e.c===c)?true:!!VLines[r][c];const right=(e.type==='V'&&e.r===r&&e.c===c+1)?true:!!VLines[r][c+1];if(up&&down&&left&&right&&!CellOwner[r][c])return e;} }return edges[Math.floor(Math.random()*edges.length)];}
+  function isAITurn(){const p=state.players[state.turnIndex];return p && p.nick && p.nick.toLowerCase().includes('ia');}
+  function aiPlay(canvasCtx,uiCtx){const cur=state.players[state.turnIndex],col=cur.color;const edge=aiChooseEdge();if(!edge){nextTurn();return;}setTimeout(()=>{if(edge.type==='H'){if(HLines[edge.r][edge.c]){nextTurn();return;}HLines[edge.r][edge.c]=col;}else{if(VLines[edge.r][edge.c]){nextTurn();return;}VLines[edge.r][edge.c]=col;}drawPlacedLine(canvasCtx,edge,col);const gained=checkAndCloseCells(canvasCtx,edge,col);if(!gained)nextTurn();else startTurnTimer();},800);}
+
+  function startTurnTimer(){clearInterval(state.timer);const tEl=document.getElementById('turnSeconds');let remain=(state.timePerTurn||0);document.getElementById('turnPlayer').textContent=state.players[state.turnIndex].nick;colorTimerCircle();renderSidePlayers();tEl.textContent=state.timePerTurn?(remain+''):'—';if(isAITurn()){aiPlay(document.getElementById('gameCanvas').getContext('2d'),document.getElementById('uiCanvas').getContext('2d'));return;}if(!state.timePerTurn)return;state.timer=setInterval(()=>{remain--;tEl.textContent=remain+'';if(remain<=0){clearInterval(state.timer);const cur=state.players[state.turnIndex];cur.fouls=(cur.fouls||0)+1;if(cur.fouls>=CONFIG.FOUL_LIMIT){cur.abandoned=true;}nextTurn();}},1000);}
   function nextTurn(){state.turnIndex=(state.turnIndex+1)%state.players.length;let safety=0;while(state.players[state.turnIndex].abandoned&&safety<10){state.turnIndex=(state.turnIndex+1)%state.players.length;safety++;}startTurnTimer();}
 
-  async function startGame(){showScreen('prep-screen');document.getElementById('prepPhase').textContent=state.phase;setTimeout(async()=>{showScreen('game-screen');document.getElementById('hud').style.display='block';renderSidePlayers();const canvas=document.getElementById('gameCanvas');const uiCanvas=document.getElementById('uiCanvas');const ctx=canvas.getContext('2d');const uiCtx=uiCanvas.getContext('2d');const map=ChakanaPhaseFromImages.PHASE_IMAGE_MAP[state.phase];try{const cells=await ChakanaPhaseFromImages.extractMatrixFromImage(map.src,map.n);drawBoard(ctx,cells);initGrid(map.n,canvas);}catch(err){alert('No se pudo leer el patrón desde la imagen. Si abriste con file://, usa un servidor local.');const n=7;const cells=Array.from({length:n},()=>Array(n).fill(0));drawBoard(ctx,cells);initGrid(n,canvas);}let ghost=null;canvas.addEventListener('mousemove',(ev)=>{const rect=canvas.getBoundingClientRect();const x=ev.clientX-rect.left,y=ev.clientY-rect.top;const edge=edgeAtPoint(x,y);const curCol=state.players[state.turnIndex].color;ghost=edge;drawGhost(uiCtx,ghost,curCol);});canvas.addEventListener('mouseleave',()=>{ghost=null;drawGhost(uiCtx,null,'');});canvas.addEventListener('click',()=>{if(!ghost)return;const cur=state.players[state.turnIndex],col=cur.color;if(ghost.type==='H'){if(HLines[ghost.r][ghost.c])return;HLines[ghost.r][ghost.c]=col;}else{if(VLines[ghost.r][ghost.c])return;VLines[ghost.r][ghost.c]=col;}drawPlacedLine(ctx,ghost,col);uiCtx.clearRect(0,0,uiCanvas.width,uiCanvas.height);const gained=checkAndCloseCells(ctx,ghost,col);if(!gained){nextTurn();}else{startTurnTimer();}});document.getElementById('turnPlayer').textContent=state.players[state.turnIndex].nick;startTurnTimer();},800);} 
+  async function startGame(){showScreen('prep-screen');document.getElementById('prepPhase').textContent=state.phase;const banner=PHASE_BANNERS[state.phase];document.getElementById('prepBanner').innerHTML=banner?`<img src="${banner}" alt="banner fase" style="max-width:900px;width:100%;height:auto;border-radius:8px;border:2px solid var(--gold)">`:'';setTimeout(async()=>{showScreen('game-screen');document.getElementById('hud').style.display='block';renderSidePlayers();const canvas=document.getElementById('gameCanvas');const uiCanvas=document.getElementById('uiCanvas');const ctx=canvas.getContext('2d');const uiCtx=uiCanvas.getContext('2d');const map=window.ChakanaPhaseFromImages?.PHASE_IMAGE_MAP?.[state.phase];try{const cells=await window.ChakanaPhaseFromImages.extractMatrixFromImage(map.src,map.n);drawBoard(ctx,cells);initGrid(map.n,canvas);}catch(err){alert('No se pudo leer el patrón desde la imagen. Si abriste con file://, usa un servidor local.');const n=7;const cells=Array.from({length:n},()=>Array(n).fill(0));drawBoard(ctx,cells);initGrid(n,canvas);}let ghost=null;canvas.addEventListener('mousemove',(ev)=>{const rect=canvas.getBoundingClientRect();const x=ev.clientX-rect.left,y=ev.clientY-rect.top;const edge=edgeAtPoint(x,y);const curCol=state.players[state.turnIndex].color;ghost=edge;drawGhost(uiCtx,ghost,curCol);});canvas.addEventListener('mouseleave',()=>{ghost=null;drawGhost(uiCtx,null,'');});canvas.addEventListener('click',()=>{if(!ghost)return;const cur=state.players[state.turnIndex],col=cur.color;if(ghost.type==='H'){if(HLines[ghost.r][ghost.c])return;HLines[ghost.r][ghost.c]=col;}else{if(VLines[ghost.r][ghost.c])return;VLines[ghost.r][ghost.c]=col;}drawPlacedLine(ctx,ghost,col);uiCtx.clearRect(0,0,uiCanvas.width,uiCanvas.height);const gained=checkAndCloseCells(ctx,ghost,col);if(!gained){nextTurn();}else{startTurnTimer();}});document.getElementById('turnPlayer').textContent=state.players[state.turnIndex].nick;startTurnTimer();},900);} 
 
-  function renderPhaseList(){const list=document.getElementById('phaseList');list.innerHTML='';const sorted=[...PHASE_META].sort((a,b)=>b.diff-a.diff||a.id-b.id);sorted.forEach(ph=>{const card=document.createElement('div');card.className='card phase-card selectable';card.dataset.phase=ph.id;card.innerHTML=`<div style="font-weight:700">${ph.quechua}</div><div style="font-size:12px;opacity:.85">${ph.sub}</div><div style="position:absolute;top:8px;right:10px;font-size:12px;opacity:.7">Dificultad: ${ph.diff}</div>`;card.addEventListener('click',()=>{list.querySelectorAll('.phase-card').forEach(el=>el.classList.remove('selected'));card.classList.add('selected');state.phase=ph.id;document.getElementById('phaseContinue').disabled=false;});list.appendChild(card);});document.getElementById('currentCups').textContent=state.profile.cups||0;renderPhasePlayers();}
-  function renderPhasePlayers(){const box=document.getElementById('phasePlayers');box.innerHTML='<strong>Jugadores:</strong>';const row=document.createElement('div');row.style.display='flex';row.style.gap='8px';state.players.forEach(p=>{const pill=document.createElement('div');pill.className='pill';pill.style.borderColor=p.color;pill.textContent=`${p.nick} · ${p.avatar}`;row.appendChild(pill);});box.appendChild(row);} 
+  function renderPhaseList(){const list=document.getElementById('phaseList');list.innerHTML='';const sorted=[...PHASE_META].sort((a,b)=>b.diff-a.diff||a.id-b.id);sorted.forEach(ph=>{const card=document.createElement('div');card.className='card phase-card selectable';card.dataset.phase=ph.id;const banner=PHASE_BANNERS[ph.id];card.innerHTML=`${banner?`<img src='${banner}' alt='${ph.quechua}'>`:''}<div class='phase-info'><div style='font-weight:700'>${ph.quechua}</div><div style='font-size:12px;opacity:.9'>${ph.sub}</div><div style='font-size:12px;opacity:.7'>Dificultad: ${ph.diff}</div></div>`;card.addEventListener('click',()=>{list.querySelectorAll('.phase-card').forEach(el=>el.classList.remove('selected'));card.classList.add('selected');state.phase=ph.id;document.getElementById('phaseContinue').disabled=false;const prev=document.getElementById('phasePreview');prev.innerHTML=banner?`<img src='${banner}' alt='preview'>`:'';});list.appendChild(card);});document.getElementById('currentCups').textContent=state.profile?.cups||0;renderPhasePlayers();}
+  function renderPhasePlayers(){const box=document.getElementById('phasePlayers');if(!box) return; box.innerHTML='<strong>Jugadores:</strong>';const row=document.createElement('div');row.style.display='flex';row.style.gap='8px';state.players.forEach(p=>{const pill=document.createElement('div');pill.className='pill';pill.style.borderColor=p.color;pill.textContent=`${p.nick} · ${p.avatar}`;row.appendChild(pill);});box.appendChild(row);} 
 
-  // Flujo de escenas
-  function buildPlayersFromSlots(){state.players=[];const p1Color=PLAYER_COLORS[0];state.players.push({nick:state.profile.nick,avatar:state.profile.avatar,color:p1Color,points:0,bombs:CONFIG.START_BOMBS,rays:CONFIG.START_RAYS,fouls:0,abandoned:false});if(state.mode==='1via'){const aiAvatar=AVATARS.filter(a=>a!==state.profile.avatar)[Math.floor(Math.random()*AVATARS.length-1)]||'puma';const aiColor=PLAYER_COLORS[1];state.players.push({nick:'IA Andina',avatar:aiAvatar,color:aiColor,points:0,bombs:CONFIG.START_BOMBS,rays:CONFIG.START_RAYS,fouls:0,abandoned:false});return;}document.querySelectorAll('.player-slot').forEach((slot,i)=>{const name=(slot.querySelector('.slot-name').value||'').trim().slice(0,12)||('Jugador '+(i+2));const avatar=slot.querySelector('.slot-avatar').value;const color=slot.querySelector('.slot-color').value;state.players.push({nick:name,avatar,color,points:0,bombs:CONFIG.START_BOMBS,rays:CONFIG.START_RAYS,fouls:0,abandoned:false});});}
+  function buildPlayersFromSlots(){state.players=[];const p1Color=PLAYER_COLORS[0];state.players.push({nick:state.profile.nick,avatar:state.profile.avatar,color:p1Color,points:0,bombs:CONFIG.START_BOMBS,rays:CONFIG.START_RAYS,fouls:0,abandoned:false});if(state.mode==='1via'){const aiAvatar=AVATARS.filter(a=>a!==state.profile.avatar)[0]||'puma';const aiColor=PLAYER_COLORS[1];state.players.push({nick:'IA Andina',avatar:aiAvatar,color:aiColor,points:0,bombs:CONFIG.START_BOMBS,rays:CONFIG.START_RAYS,fouls:0,abandoned:false});return;}document.querySelectorAll('.player-slot').forEach((slot,i)=>{const name=(slot.querySelector('.slot-name').value||'').trim().slice(0,12)||('Jugador '+(i+2));const avatar=slot.querySelector('.slot-avatar').value;const color=slot.querySelector('.slot-color').value;state.players.push({nick:name,avatar,color,points:0,bombs:CONFIG.START_BOMBS,rays:CONFIG.START_RAYS,fouls:0,abandoned:false});});}
   function renderPlayerSlots(){const wrap=document.getElementById('playerSlots');wrap.innerHTML='';let count=2;if(state.mode==='3')count=3;if(state.mode==='4')count=4;const start=(state.mode==='1v1')?1:1;for(let i=start;i<count;i++){const color=PLAYER_COLORS[i%PLAYER_COLORS.length];const slot=document.createElement('div');slot.className='card player-slot';slot.innerHTML=`<div><div style="display:flex;align-items:center;gap:10px"><div class="pill" style="border-color:${color}">Color</div><input class="input slot-name" maxlength="12" placeholder="Nombre jugador ${i+1} (máx. 12)"><input class="slot-color" type="hidden" value="${color}"></div><div class="thumbs"><img data-avatar="condor" src="assets/img/guerrero-condor.png" alt="condor"><img data-avatar="puma" src="assets/img/guerrero-puma.png" alt="puma"><img data-avatar="boa" src="assets/img/guerrero-boa.png" alt="boa"><img data-avatar="vicuna" src="assets/img/guerrero-vicuna.png" alt="vicuna"></div><input class="slot-avatar" type="hidden" value="condor"></div>`;wrap.appendChild(slot);}wrap.querySelectorAll('.player-slot .thumbs img').forEach(img=>{img.addEventListener('click',()=>{const box=img.closest('.player-slot');box.querySelectorAll('.thumbs img').forEach(i=>i.classList.remove('selected'));img.classList.add('selected');box.querySelector('.slot-avatar').value=img.dataset.avatar;});});}
 
   // Música
   function tryPlayBg(){const bg=document.getElementById('bgMusic');bg.volume=0.5;const p=bg.play();if(p&&p.catch)p.catch(()=>{});} 
 
+  // Tienda (apertura correcta + compra realista)
+  function luhnValid(num){const s=num.replace(/\s+/g,'').replace(/-/g,'');if(!/^\d{13,19}$/.test(s))return false;let sum=0,alt=false;for(let i=s.length-1;i>=0;i--){let n=parseInt(s[i],10);if(alt){n*=2;if(n>9)n-=9;}sum+=n;alt=!alt;}return sum%10===0;}
+  function expValid(mmYY){if(!/^\d{2}\/\d{2}$/.test(mmYY))return false;const m=parseInt(mmYY.split('/')[0],10),y=2000+parseInt(mmYY.split('/')[1],10);if(m<1||m>12)return false;const now=new Date();const end=new Date(y,m);return end>now;}
+  function cvvValid(cvv){return /^\d{3,4}$/.test(cvv);} 
+
   window.addEventListener('DOMContentLoaded',()=>{
     setTheme(CONFIG.THEME_DEFAULT);
-    const introVideo=document.getElementById('introVideo');introVideo.addEventListener('ended',()=>showScreen('login-screen'));document.getElementById('skipIntro').addEventListener('click',()=>{tryPlayBg();showScreen('login-screen');});
+    const introVideo=document.getElementById('introVideo');introVideo.addEventListener('ended',()=>showScreen('login-screen'));
+    document.getElementById('skipIntro').addEventListener('click',()=>{tryPlayBg();showScreen('login-screen');});
 
-    // Login
-    document.getElementById('enterGame').addEventListener('click',()=>{tryPlayBg();const nick=(document.getElementById('nickInput').value||'').trim().slice(0,12);if(!nick)return;let p=loadProfile(nick);if(!p){p={nick,avatar:null,coins:0,cups:0,progress:{}};saveProfile(p);}state.profile=p;if(!p.progress.tutorialDone){showScreen('tutorial-screen');}else{showScreen('avatar-screen');}});
+    // Login (Enter)
+    document.getElementById('nickInput').addEventListener('keydown',(e)=>{if(e.key==='Enter')document.getElementById('enterGame').click();});
+    document.getElementById('enterGame').addEventListener('click',()=>{tryPlayBg();const nick=(document.getElementById('nickInput').value||'').trim().slice(0,12);if(!nick)return;let p=loadProfile(nick);if(!p){p={nick,avatar:null,coins:0,cups:0,progress:{}};saveProfile(p);}state.profile=p;showScreen('avatar-screen');});
 
-    // Tutorial bonus
-    document.getElementById('completeTutorial').addEventListener('click',()=>{state.profile.progress.tutorialDone=true;state.profile.coins=(state.profile.coins||0)+CONFIG.TUTORIAL_COINS;state.profile.cups=(state.profile.cups||0)+CONFIG.TUTORIAL_CUPS;saveProfile(state.profile);showScreen('avatar-screen');});
-    document.getElementById('skipTutorial').addEventListener('click',()=>{state.profile.progress.tutorialDone=true;saveProfile(state.profile);showScreen('avatar-screen');});
-
-    // Avatar principal
+    // Avatar
     glowSelect('avatarGrid','.selectable');
     document.querySelectorAll('#avatarGrid .selectable').forEach(card=>card.addEventListener('click',()=>{state.profile.avatar=card.dataset.avatar;saveProfile(state.profile);document.getElementById('avatarContinue').disabled=false;}));
     document.getElementById('avatarContinue').addEventListener('click',()=>showScreen('mode-screen'));
@@ -376,7 +376,7 @@
     document.getElementById('playerSlots').addEventListener('input',()=>{let ok=true;document.querySelectorAll('.player-slot .slot-name').forEach(inp=>{if(!inp.value.trim()) ok=false;});document.getElementById('playersContinue').disabled=!ok;});
     document.getElementById('playersContinue').addEventListener('click',()=>{buildPlayersFromSlots();showScreen('time-screen');});
 
-    // Tiempo por turno
+    // Tiempo
     glowSelect('timeGrid','.time');
     document.querySelectorAll('#timeGrid .time').forEach(card=>card.addEventListener('click',()=>{const t=card.dataset.time;state.timePerTurn=(t==='st')?null:parseInt(t,10);document.getElementById('timeContinue').disabled=false;}));
     document.getElementById('timeBack').addEventListener('click',()=>{if(state.mode==='1via')showScreen('mode-screen');else showScreen('players-config-screen');});
@@ -394,16 +394,24 @@
     document.getElementById('swAmbient').addEventListener('change',e=>{if(e.target.checked){try{bg.play();}catch{}}else{bg.pause();bg.currentTime=0;}});
     document.getElementById('swClick').addEventListener('change',e=>{document.getElementById('sfxClick').muted=!e.target.checked;document.getElementById('sfxClose').muted=!e.target.checked;});
 
-    // Tienda
-    document.getElementById('btnStore').addEventListener('click',()=>{document.getElementById('storeModal').style.display='flex';});
+    // Tienda: abrir al primer click
+    document.getElementById('btnStore').addEventListener('click',()=>{document.getElementById('settingsModal').style.display='none';const store=document.getElementById('storeModal');store.style.display='flex';void store.offsetWidth;document.getElementById('cardName')?.focus();});
     document.getElementById('storeClose').addEventListener('click',()=>{document.getElementById('storeModal').style.display='none';});
-    document.getElementById('btnSimPay').addEventListener('click',()=>{alert('Compra simulada: tarjeta aprobada (demo).');});
+
+    // Selección producto & pago
+    document.querySelectorAll('#storeModal .btn-buy').forEach(btn=>btn.addEventListener('click',()=>{const card=btn.closest('.store-card');state.store.selectedProduct=card.dataset.product;alert('Producto seleccionado: '+state.store.selectedProduct.toUpperCase()+"\nCompleta la tarjeta y pulsa 'Simular compra'.");}));
+    document.getElementById('btnSimPay').addEventListener('click',()=>{const prod=state.store.selectedProduct;if(!prod){alert('Selecciona un producto primero.');return;}const name=document.getElementById('cardName').value.trim();const num=document.getElementById('cardNumber').value.trim();const exp=document.getElementById('cardExp').value.trim();const cvv=document.getElementById('cardCvv').value.trim();if(name.length<3){alert('Nombre inválido.');return;}if(!luhnValid(num)){alert('Número de tarjeta inválido (Luhn).');return;}if(!expValid(exp)){alert('Fecha de vencimiento inválida/caducada.');return;}if(!cvvValid(cvv)){alert('CVV inválido.');return;}const p=state.players[state.turnIndex];if(prod==='bomb')p.bombs=(p.bombs||0)+1;else if(prod==='ray')p.rays=(p.rays||0)+1;else if(prod==='skin'){p.skin='dorada';alert('Skin aplicada (dorada).');}
+      alert(`Pago aprobado ✅\nCompra: ${prod.toUpperCase()}\nTarjeta: **** **** **** ${num.slice(-4)}`);
+      state.store.selectedProduct=null;document.getElementById('cardName').value='';document.getElementById('cardNumber').value='';document.getElementById('cardExp').value='';document.getElementById('cardCvv').value='';renderSidePlayers();});
 
     // Resumen → Recompensas → Fin
     document.getElementById('btnEndGame').addEventListener('click',()=>{showScreen('resumen-game-screen');const box=document.getElementById('summaryScores');box.innerHTML='';state.players.forEach(p=>{const row=document.createElement('div');row.style.display='flex';row.style.gap='8px';const name=document.createElement('div');name.className='pill';name.style.borderColor=p.color;name.textContent=p.nick;const score=document.createElement('div');score.className='pill';score.textContent=p.points||0;row.appendChild(name);row.appendChild(score);box.appendChild(row);});});
     document.getElementById('summaryContinue').addEventListener('click',()=>showScreen('player-game-score'));
     document.getElementById('finishVictory').addEventListener('click',()=>{showScreen('end-screen');document.getElementById('endTitle').textContent='¡Victoria!';const vid=document.getElementById('resultVideo');vid.src='assets/video/'+(state.profile.avatar||'condor')+'-win.mp4';});
     document.getElementById('finishDefeat').addEventListener('click',()=>{showScreen('end-screen');document.getElementById('endTitle').textContent='Derrota';const vid=document.getElementById('resultVideo');vid.src='assets/video/'+(state.profile.avatar||'condor')+'-los.mp4';});
+
+    // Volver a Fases desde FIN
+    document.getElementById('endContinue').addEventListener('click',()=>{const vid=document.getElementById('resultVideo');try{vid.pause();vid.currentTime=0;}catch{};showScreen('phase-screen');renderPhaseList();});
   });
   </script>
 </body>

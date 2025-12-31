@@ -414,5 +414,32 @@
     document.getElementById('endContinue').addEventListener('click',()=>{const vid=document.getElementById('resultVideo');try{vid.pause();vid.currentTime=0;}catch{};showScreen('phase-screen');renderPhaseList();});
   });
   </script>
+<!-- Al final del body o después de tus otros scripts -->
+<script src="chakana-phase-from-images.js"></script>
+<script>
+  // Ejemplo: cargar una fase al entrar al tablero
+  async function cargarFase(faseId = 1) {
+    const { PHASE_IMAGE_MAP, extractMatrixFromImage } = window.ChakanaPhaseFromImages;
+    const fase = PHASE_IMAGE_MAP[faseId];
+    if (!fase) {
+      console.error("Fase inválida:", faseId);
+      return;
+    }
+    try {
+      const matriz = await extractMatrixFromImage(fase.src, fase.n);
+      console.table(matriz); // Visualiza la matriz para depurar
+      // TODO: aquí conectas 'matriz' con tu lógica de tablero:
+      // - pintar celdas
+      // - definir posiciones iniciales / bloqueos
+      // - preparar reglas por tamaño (7x7, 9x9, 10x10)
+    } catch (err) {
+      console.error("Error cargando la fase:", err);
+      // TODO: mostrar un modal UI de error / intentar fallback
+    }
+  }
+  // Llamar cuando el usuario selecciona fase o al entrar:
+  // cargarFase(1);
+</script>
+``
 </body>
 </html>

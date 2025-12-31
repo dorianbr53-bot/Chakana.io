@@ -57,24 +57,3 @@ h1,h2,h3{font-family:'Cinzel',serif; margin:0 0 12px 0; text-transform:uppercase
 /* Cards auxiliares */
 .card{background:var(--panel-soft); border:1px solid #00000040; border-radius:10px; padding:10px}
 .avatar{width:48px; height:48px; border-radius:50%; border:1px solid #00000040; object-fit:cover}
-
-/* Ajustes para avatares y modos (achicar y enmarcar) */
-.mode-avatars .card {
-  padding: 8px;
-  display: flex; align-items: center; justify-content: center;
-}
-.mode-avatars .card img {
-  max-width: 80%;
-  max-height: 120px;
-  object-fit: contain;
-  background: var(--panel-soft);
-  border: 2px solid var(--gold);
-  border-radius: 10px;
-  padding: 6px;
-}
-
-/* Mejor template en móviles */
-@media (max-width: 720px) {
-  .mode-avatars.grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
-}
-``
